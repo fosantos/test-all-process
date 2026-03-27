@@ -1,7 +1,7 @@
 package com.example.productapi.controller;
 
 import com.example.productapi.model.Product;
-import com.example.productapi.repository.ProductRepository;
+import com.example.productapi.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -24,7 +24,7 @@ import java.util.UUID;
 public class ProductController {
 
     @Autowired
-    private ProductRepository productRepository;
+    private ProductService productService;
 
     // GET /products - get all products
     @Operation(summary = "Get all products", description = "Retrieve a list of all products")
@@ -35,7 +35,7 @@ public class ProductController {
     })
     @GetMapping
     public List<Product> getAllProducts() {
-        return productRepository.findAll();
+        return productService.getAllProducts();
     }
 
     // GET /products/{id} - get a product by id
@@ -48,9 +48,11 @@ public class ProductController {
     })
     @GetMapping("/{id}")
     public ResponseEntity<Product> getProductById(@Parameter(description = "ID of the product to be retrieved", required = true) @PathVariable UUID id) {
-        return productRepository.findById(id)
-                .map(product -> ResponseEntity.ok().body(product))
-                .orElse(ResponseEntity.notFound().build());
+        Product product = productService.getProductById(id);
+        if (product != null) {
+            return ResponseEntity.ok().body(product);
+        }
+        return ResponseEntity.notFound().build();
     }
 
     // POST /products - create a new product
@@ -63,7 +65,7 @@ public class ProductController {
     })
     @PostMapping
     public ResponseEntity<Product> createProduct(@Parameter(description = "Product object to be created", required = true) @RequestBody Product product) {
-        Product savedProduct = productRepository.save(product);
+        Product savedProduct = productService.createProduct(product);
         return ResponseEntity.created(URI.create("/products/" + savedProduct.getId()))
                 .body(savedProduct);
     }
@@ -80,13 +82,11 @@ public class ProductController {
     @PutMapping("/{id}")
     public ResponseEntity<Product> updateProduct(@Parameter(description = "ID of the product to be updated", required = true) @PathVariable UUID id,
                                                  @Parameter(description = "Updated product details", required = true) @RequestBody Product productDetails) {
-        return productRepository.findById(id)
-                .map(product -> {
-                    product.setName(productDetails.getName());
-                    Product updatedProduct = productRepository.save(product);
-                    return ResponseEntity.ok().body(updatedProduct);
-                })
-                .orElse(ResponseEntity.notFound().build());
+        Product updatedProduct = productService.updateProduct(id, productDetails);
+        if (updatedProduct != null) {
+            return ResponseEntity.ok().body(updatedProduct);
+        }
+        return ResponseEntity.notFound().build();
     }
 
     // DELETE /products/{id} - delete a product
@@ -97,11 +97,11 @@ public class ProductController {
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProduct(@Parameter(description = "ID of the product to be deleted", required = true) @PathVariable UUID id) {
-        return productRepository.findById(id)
-                .map(product -> {
-                    productRepository.deleteById(id);
-                    return ResponseEntity.noContent().<Void>build();
-                })
-                .orElse(ResponseEntity.notFound().build());
+        Product existingProduct = productService.getProductById(id);
+        if (existingProduct != null) {
+            productService.deleteProduct(id);
+            return ResponseEntity.noContent().<Void>build();
+        }
+        return ResponseEntity.notFound().build();
     }
 }
