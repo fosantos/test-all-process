@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -80,7 +81,7 @@ class ProductControllerTest {
         Product product = new Product(null, "New Product");
         Product savedProduct = new Product(UUID.randomUUID(), "New Product");
 
-        when(productService.createProduct(product)).thenReturn(savedProduct);
+        when(productService.createProduct(any(Product.class))).thenReturn(savedProduct);
 
         // When & Then
         mockMvc.perform(post("/products")
@@ -98,7 +99,7 @@ class ProductControllerTest {
         Product productDetails = new Product(null, "Updated Product");
         Product updatedProduct = new Product(id, "Updated Product");
 
-        when(productService.updateProduct(id, productDetails)).thenReturn(updatedProduct);
+        when(productService.updateProduct(eq(id), any(Product.class))).thenReturn(updatedProduct);
 
         // When & Then
         mockMvc.perform(put("/products/{id}", id)
